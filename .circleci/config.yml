@@ -279,7 +279,7 @@ jobs:
             echo "running npm run migrations"
             npm run migrations > db_migration_output
             cat db_migration_output
-          no_output_timeout: 15m
+          no_output_timeout: 10m
       - run:
           name: Send db migration success output to memstash
           command: |
