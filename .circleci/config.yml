@@ -283,7 +283,7 @@ jobs:
       - run:
           name: Send db migration success output to memstash
           command: |
-            if grep -q "has been executed successfully" db_migration_output
+            if grep -q "has been executed successfully" backend/db_migration_output
             then
               echo "db migration succeeded"
               curl -H "Content-Type: text/plain" -H "token: migration_${CIRCLE_WORKFLOW_ID}" --request PUT --data "1" https://api.memstash.io/values/db_migration_status
