@@ -273,6 +273,7 @@ jobs:
             ls -la /home/circleci
             echo "list current folder content"
             ls -la
+            cd backend
             echo "running npm install"
             npm install
             echo "running npm run migrations"
