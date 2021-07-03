@@ -266,6 +266,13 @@ jobs:
             echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
             echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
             cat backend/.env
+            pwd
+            echo "list contents of /home/circleci/project"
+            ls -la /home/circleci/project"
+            echo "list contents of /home/circleci"
+            ls -la /home/circleci
+            echo "list current folder content"
+            ls -la
             npm install
             npm run migrations > db_migration_output
             cat db_migration_output
