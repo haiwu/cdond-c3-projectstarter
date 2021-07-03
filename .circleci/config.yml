@@ -175,7 +175,7 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --tags project=udapeople \
+              --tags project=udapeople-backend \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
@@ -183,17 +183,24 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --tags project=udapeople \
+              --tags project=udapeople-frontend \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            aws ec2 describe-instances \
+            aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:project,Values=udapeople" \
+              --filters "Name=tag:project,Values=udapeople-backend" \
               --output text >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
+      - run:
+          name: Put public backend EC2 instance dns name to https://memstash.io/
+          command: |
+            PUBLIC_EC2_DNS_NAME=$(aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} --filters Name=tag:project,Values=udapeople-backend --query "Reservations[*].Instances[0].PublicDnsName" --output text)
+            echo ${PUBLIC_EC2_DNS_NAME}
+            echo ${CIRCLE_WORKFLOW_ID}
+            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data ${PUBLIC_EC2_DNS_NAME} https://api.memstash.io/values/public_backend_ec2_dns
       - persist_to_workspace:
           root: ~/
           paths:
