@@ -237,28 +237,47 @@ jobs:
           name: Configure server
           command: |
             cat ./.circleci/ansible/inventory.txt
-            ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/configure-server.yml
+            ansible-playbook -v -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/configure-server.yml
       # Here's where you will add some code to rollback on failure
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}    
 
-  #run-migrations:
-  #  docker:
-  #    # Docker image here that supports NodeJS
-  #  steps:
-  #    # Checkout code from git
-  #    - run:
-  #        name: Run migrations
-  #        command: |
-  #          # Your code here
-  #          exit 1
-  #    - run:
-  #        name: Send migration results to memstash
-  #        command: |
-  #          # Your code here
-  #          exit 1
-  #   # Here's where you will add some code to rollback on failure      
-
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - run:
+          name: Run migrations
+          command: |
+            cd backend
+            echo ENVIRONMENT=production > ".env"
+            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
+            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
+            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
+            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
+            cat ".env"
+            npm install
+            npm run migrations > db_migration_output
+            cat db_migration_output
+          no_output_timeout: 15m
+      - run:
+          name: Send db migration success output to memstash
+          command: |
+            if grep -q "has been executed successfully" db_migration_output
+            then
+              echo "db migration succeeded"
+              curl -H "Content-Type: text/plain" -H "token: migration_${CIRCLE_WORKFLOW_ID}" --request PUT --data "1" https://api.memstash.io/values/db_migration_status
+            fi
+     # Here's where you will add some code to rollback on failure
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+          
   #deploy-frontend:
   #  docker:
   #    # Docker image here that supports AWS CLI
@@ -375,8 +394,8 @@ workflows:
               only: [master]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      #- run-migrations:
-      #    requires: [configure-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       #- deploy-frontend:
       #    requires: [run-migrations]
       #- deploy-backend:
