@@ -268,12 +268,14 @@ jobs:
             cat backend/.env
             pwd
             echo "list contents of /home/circleci/project"
-            ls -la /home/circleci/project"
+            ls -la /home/circleci/project
             echo "list contents of /home/circleci"
             ls -la /home/circleci
             echo "list current folder content"
             ls -la
+            echo "running npm install"
             npm install
+            echo "running npm run migrations"
             npm run migrations > db_migration_output
             cat db_migration_output
           no_output_timeout: 15m
