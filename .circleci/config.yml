@@ -31,8 +31,7 @@ commands:
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
             SUCCESS=$(curl -H "token: migration_<< parameters.workflow_id >>" --request GET https://api.memstash.io/values/db_migration_status)
-            if(( $SUCCESS==1 )); 
-            then
+            if [ "$SUCCESS" == "1" ]]; then
               cd ~/project/backend
               npm install
               npm run migrations:revert
