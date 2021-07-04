@@ -30,13 +30,12 @@ commands:
           when: on_fail
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = 1
+            SUCCESS=$(curl -H "token: migration_<< parameters.workflow_id >>" --request GET https://api.memstash.io/values/db_migration_status)
             if(( $SUCCESS==1 )); 
             then
-            #  cd ~/project/backend
-            #  npm install
-            #  Add revert code here. You can find this in the Getting Started section.
-              exit 1
+              cd ~/project/backend
+              npm install
+              npm run migrations:revert
             fi
             
 jobs:
@@ -205,6 +204,13 @@ jobs:
             echo ${PUBLIC_EC2_DNS_NAME}
             echo ${CIRCLE_WORKFLOW_ID}
             curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data ${PUBLIC_EC2_DNS_NAME} https://api.memstash.io/values/public_backend_ec2_dns
+      - run:
+          name: Put EC2 BACKEND_IP to https://memstash.io/
+          command: |
+            BACKEND_IP=$(aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} --filters Name=tag:project,Values=udapeople-backend --query "Reservations[*].Instances[0].PublicIpAddress" --output text)
+            echo ${BACKEND_IP}
+            echo ${CIRCLE_WORKFLOW_ID}
+            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data ${BACKEND_IP} https://api.memstash.io/values/public_backend_ip            
       - persist_to_workspace:
           root: ~/
           paths:
@@ -286,33 +292,49 @@ jobs:
             if grep -q "has been executed successfully" backend/db_migration_output
             then
               echo "db migration succeeded"
+              echo "migration_${CIRCLE_WORKFLOW_ID}"
               curl -H "Content-Type: text/plain" -H "token: migration_${CIRCLE_WORKFLOW_ID}" --request PUT --data "1" https://api.memstash.io/values/db_migration_status
             fi
      # Here's where you will add some code to rollback on failure
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID}
           
-  #deploy-frontend:
-  #  docker:
-  #    # Docker image here that supports AWS CLI
-  #  steps:
-  #    # Checkout code from git
-  #    - run:
-  #        name: Install dependencies
-  #        command: |
-  #          # your code here
-  #    - run:
-  #        name: Get backend url
-  #        command: |
-  #          # your code here
-  #          export API_URL="http://${BACKEND_IP}:3030"
-  #          echo "${API_URL}"
-  #    - run:
-  #        name: Deploy frontend objects
-  #        command: |
-  #          # your code here
-  #    # Here's where you will add some code to rollback on failure      
-                    
+  deploy-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
+            yum -y install tar gzip
+            yum -y install nodejs
+      - run:
+          name: Get backend url
+          command: | 
+            export BACKEND_IP=$(curl -H  "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/public_backend_ip)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "API_URL is: ${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> "frontend/.env"
+            cat frontend/.env
+      - run:
+          name: Deploy frontend objects
+          command: |
+            # your code here
+            cd frontend
+            npm install
+            npm run build
+            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
+            aws s3 sync dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}
+      # Here's where you will add some code to rollback on failure
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID}
+          
   #deploy-backend:
   #  docker:
   #    # Docker image here that supports Ansible
@@ -410,8 +432,8 @@ workflows:
           requires: [deploy-infrastructure]
       - run-migrations:
           requires: [configure-infrastructure]
-      #- deploy-frontend:
-      #    requires: [run-migrations]
+      - deploy-frontend:
+          requires: [run-migrations]
       #- deploy-backend:
       #    requires: [run-migrations]
       #- smoke-test:
