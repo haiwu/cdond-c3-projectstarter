@@ -350,14 +350,17 @@ jobs:
           name: Install dependencies
           command: |
             apk add --update ansible
+            apk add --update curl nodejs npm
             apk add --update tar gzip
             ansible --version
+            pip install awscli
+            ansible --version
+            aws --version
       - run:
           name: Deploy backend
           command: |
             mkdir -p .circleci/ansible/roles/deploy/files/
-            cd backend
-            tar -zcvf backend-artifacts.tar.gz ./dist
+            tar -C backend -czvf backend-artifacts.tar.gz .
             mv backend-artifacts.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
             cat ~/project/.circleci/ansible/inventory.txt
             ansible-playbook -v -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml
