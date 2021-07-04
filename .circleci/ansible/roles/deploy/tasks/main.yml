@@ -1,0 +1,16 @@
+---
+- name: Creates directory
+  file:
+    path: /home/ubuntu/backend
+    state: directory
+
+- name: unarchive backend files
+  unarchive:
+    src: backend-artifacts.tar.gz
+    dest: /home/ubuntu/backend/
+
+- name: Start PM2
+  become: true
+  shell: |
+    cd /home/ubuntu/backend
+    pm2 start npm --name backend -- start
