@@ -382,12 +382,11 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Get backend url
+          name: Get backend url and do backend smoke test.
           command: |
             BACKEND_IP=$(curl -H  "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/public_backend_ip)
-      - run:
-          name: Backend smoke test.
-          command: |
+            echo "BACKEND_IP: ${BACKEND_IP}"
+            echo "Smoke test URL: http://${BACKEND_IP}:3030/api/status"
             if curl -s http://${BACKEND_IP}:3030/api/status
             then
               echo "pass backend smoke test"
