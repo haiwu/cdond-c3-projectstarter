@@ -445,14 +445,20 @@ jobs:
             echo "OldWorkflowID: ${OldWorkflowID}"
             printf '%s\n' "${STACKS[@]}"
 
-            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+            if [ ! -z $OldWorkflowID ]
             then
-              echo "Remove s3://udapeople-${OldWorkflowID}"
-              aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
-              echo "Remove stack udapeople-backend-${OldWorkflowID}"
-              aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
-              echo "Remove stack udapeople-frontend-${OldWorkflowID}"
-              aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
+              if [[ "${OldWorkflowID}" != "${CIRCLE_WORKFLOW_ID:0:7}" ]]
+              then
+                if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+                then
+                  echo "Remove s3://udapeople-${OldWorkflowID}"
+                  aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
+                  echo "Remove stack udapeople-backend-${OldWorkflowID}"
+                  aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
+                  echo "Remove stack udapeople-frontend-${OldWorkflowID}"
+                  aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
+                fi
+              fi
             fi
             
 workflows:
