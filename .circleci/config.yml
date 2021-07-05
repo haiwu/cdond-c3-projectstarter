@@ -389,7 +389,7 @@ jobs:
             echo "Smoke test URL: http://${BACKEND_IP}:3030/api/status"
             if curl -s http://${BACKEND_IP}:3030/api/status
             then
-              echo "pass backend smoke test. this is to trigger 2nd success run"
+              echo "pass backend smoke test. this is to trigger 2nd success run 2nd time"
               return 0
             else
               echo "fail backend smoke test"
