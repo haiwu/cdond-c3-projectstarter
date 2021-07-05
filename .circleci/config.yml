@@ -192,9 +192,9 @@ jobs:
           name: Add back-end ip to ansible inventory
           command: |
             aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --query 'Reservations[*].Instances[0].PublicIpAddress' \
               --filters "Name=tag:project,Values=udapeople-backend" \
-              --output text >> .circleci/ansible/inventory.txt
+              --output text > .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
       - run:
           name: Put public backend EC2 instance dns name to https://memstash.io/
