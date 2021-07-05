@@ -193,20 +193,20 @@ jobs:
           command: |
             aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} \
               --query 'Reservations[*].Instances[0].PublicIpAddress' \
-              --filters "Name=tag:project,Values=udapeople-backend" \
-              --output text > .circleci/ansible/inventory.txt
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --output text >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
       - run:
           name: Put public backend EC2 instance dns name to https://memstash.io/
           command: |
-            PUBLIC_EC2_DNS_NAME=$(aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} --filters Name=tag:project,Values=udapeople-backend --query "Reservations[*].Instances[0].PublicDnsName" --output text)
+            PUBLIC_EC2_DNS_NAME=$(aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} --filters Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7} --query "Reservations[*].Instances[0].PublicDnsName" --output text)
             echo ${PUBLIC_EC2_DNS_NAME}
             echo ${CIRCLE_WORKFLOW_ID}
             curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data ${PUBLIC_EC2_DNS_NAME} https://api.memstash.io/values/public_backend_ec2_dns
       - run:
           name: Put EC2 BACKEND_IP to https://memstash.io/
           command: |
-            BACKEND_IP=$(aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} --filters Name=tag:project,Values=udapeople-backend --query "Reservations[*].Instances[0].PublicIpAddress" --output text)
+            BACKEND_IP=$(aws ec2 describe-instances --region ${AWS_DEFAULT_REGION} --filters Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7} --query "Reservations[*].Instances[0].PublicIpAddress" --output text)
             echo ${BACKEND_IP}
             echo ${CIRCLE_WORKFLOW_ID}
             curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data ${BACKEND_IP} https://api.memstash.io/values/public_backend_ip            
@@ -217,7 +217,7 @@ jobs:
       # Here's where you will add some code to rollback on failure
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-
+            
   configure-infrastructure:
     docker:
       - image: python:3.7-alpine3.11
